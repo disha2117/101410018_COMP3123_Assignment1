@@ -11,6 +11,18 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+const dbReady = connectDB();
+
+app.use(async (req, res, next) => {
+  try {
+    await dbReady;
+    next();
+  } catch (error) {
+    res.status(503).json({
+      message: "Database unavailable"
+    });
+  }
+});
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/emp", employeeRoutes);
 
@@ -21,12 +33,15 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB for both local and Vercel
+
+
 if (require.main === module) {
-  connectDB().then(() => {
+  dbReady.then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   });
 }
 
-module.exports = app;
